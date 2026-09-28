@@ -1,0 +1,17 @@
+{
+  "id": "plock2sound",
+  "version": "1.0",
+  "title": "P-lock to sound",
+  "category": "Sequencer",
+  "author": "irpina",
+  "license": "GPL-2.0-or-later",
+  "description": "Hold one step TRIG and its synth TRK, then tap RECORD: copies the track sound with that step's parameter locks baked in, ready to save as a sound in the SOUND MANAGER. No TRIG held (or a sound-locked step) keeps the stock copy.",
+  "device": "digitone-mk1",
+  "os": "1.43",
+  "sources": ["plock2sound.s"],
+  "sites": [
+    {"addr": "0x4004e676", "stock": "4eb940032c88", "op": "jsr", "target": "plock2sound_copy"}
+  ],
+  "requires": ["core"],
+  "resources": {"names": ["ui:TRIG+TRK+RECORD step p-locks to sound"]}
+}
