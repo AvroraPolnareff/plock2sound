@@ -107,6 +107,15 @@ python -m elekloader.lint out/plock2sound-1.0.elemod --stock Digitone_and_Digito
 | `mod.json` | the mod: its one hook site, source and name |
 | `plock2sound.s` | the hook: gate checks, the lock bake and the stock replay |
 
+The same build and lint run on every push and pull request in the
+[build workflow](.github/workflows/build.yml), which uploads the `.elemod`
+as an artifact, and attaches it to a GitHub release on `v*` tags. The
+workflow fetches the stock OS file from
+[Elektron's Digitone downloads](https://www.elektron.se/support-downloads/digitone)
+itself (its sha256 is pinned), so nothing needs setting up.
+If Elektron ever replaces the file, the workflow fails on the hash check:
+update the URL and the pinned hash in the download step then.
+
 ## How it was checked
 
 The mod is one 6-byte hook on the sound-copy call plus the handler above.

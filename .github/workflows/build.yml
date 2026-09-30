@@ -1,0 +1,65 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install the m68k cross toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y binutils-m68k-linux-gnu gcc-m68k-linux-gnu
+
+      - name: Install elekloader
+        run: |
+          git clone --depth 1 https://github.com/irpina/elekloader.git /tmp/elekloader
+          pip install /tmp/elekloader
+
+      - name: Download the stock OS file from Elektron
+        # The .zip elekloader accepts as is; the sha256 is pinned so the
+        # build fails loudly if Elektron ever changes the file.
+        run: |
+          curl -fsSL -o stock.zip \
+            https://www.elektron.se/wp-content/uploads/2026/09/Digitone_and_Digitone_Keys_OS1.43_dist.zip
+          echo "6e8f506eabad532d70aca055da840f2333bf45a0b0eea363d63e5d50013d66dd  stock.zip" | sha256sum -c -
+
+      - name: Fetch the core mod (for lint)
+        run: |
+          curl -fsSL -o core-dn1-2.0a.elemod \
+            https://github.com/irpina/elekloader/releases/latest/download/core-dn1-2.0a.elemod
+
+      - name: Build the mod
+        run: |
+          python -m elekloader.sdk.build . --stock stock.zip --out out
+
+      - name: Lint the mod
+        run: |
+          python -m elekloader.lint out/plock2sound-1.0.elemod \
+            --stock stock.zip --with core-dn1-2.0a.elemod
+
+      - name: Upload the .elemod artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plock2sound-elemod
+          path: out/*.elemod
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${GITHUB_REF_NAME}" out/*.elemod --generate-notes
