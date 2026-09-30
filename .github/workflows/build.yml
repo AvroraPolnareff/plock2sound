@@ -38,10 +38,15 @@ jobs:
             https://www.elektron.se/wp-content/uploads/2026/09/Digitone_and_Digitone_Keys_OS1.43_dist.zip
           echo "6e8f506eabad532d70aca055da840f2333bf45a0b0eea363d63e5d50013d66dd  stock.zip" | sha256sum -c -
 
-      - name: Fetch the core mod (for lint)
+      - name: Build the core mod (for lint)
+        # elekloader's releases do not carry the Digitone core yet, so build
+        # the one shipping in its source tree (mods/core-dn1).
         run: |
-          curl -fsSL -o core-dn1-2.0a.elemod \
-            https://github.com/irpina/elekloader/releases/latest/download/core-dn1-2.0a.elemod
+          python -m elekloader.sdk.build /tmp/elekloader/mods/core-dn1 \
+            --stock stock.zip --out core-out
+
+      - name: Rename the core to its distribution name
+        run: mv core-out/core-*.elemod core-dn1-2.0a.elemod
 
       - name: Build the mod
         run: |
@@ -59,7 +64,11 @@ jobs:
           path: out/*.elemod
 
       - name: Release
+        # The core goes too: users running elekloader from source need it
+        # (the Windows and macOS apps have it built in).
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "${GITHUB_REF_NAME}" out/*.elemod --generate-notes
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            out/*.elemod core-dn1-2.0a.elemod --generate-notes
